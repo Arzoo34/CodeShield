@@ -105,9 +105,84 @@
       if (lang === "cpp") editor.setOption("mode", "text/x-c++src");
     });
 
-    // Dummy Run Code function
-    function runCode() {
-      alert("Code submitted:\n\n" + editor.getValue());
+    // Run Code function that connects to backend
+    async function runCode() {
+      const code = editor.getValue();
+      const language = document.getElementById("language").value;
+      
+      if (!code.trim()) {
+        alert("Please enter some code!");
+        return;
+      }
+
+      // Show loading state
+      const button = document.querySelector("button");
+      const originalText = button.textContent;
+      button.textContent = "Running...";
+      button.disabled = true;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code: code,
+            language: language,
+            stdin: ''
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          displayResult(result.result);
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Network error: ' + error.message);
+      } finally {
+        // Reset button state
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+
+    // Display execution results
+    function displayResult(result) {
+      const verdict = result.verdict || 'UNKNOWN';
+      const stdout = result.stdout || '';
+      const stderr = result.stderr || '';
+      const executionTime = result.execution_time || 0;
+
+      let verdictColor = '#28a745'; // Green for OK
+      if (verdict === 'TLE') verdictColor = '#ffc107'; // Yellow for TLE
+      if (verdict === 'RUNTIME_ERROR') verdictColor = '#dc3545'; // Red for RTE
+      if (verdict === 'CE') verdictColor = '#6f42c1'; // Purple for CE
+
+      const resultHtml = `
+        <div style="margin-top: 20px; padding: 15px; border-radius: 8px; background: #f8f9fa; border-left: 4px solid ${verdictColor};">
+          <h3 style="margin: 0 0 10px 0; color: ${verdictColor};">
+            Verdict: ${verdict} (${executionTime}ms)
+          </h3>
+          ${stdout ? `<div style="margin-bottom: 10px;"><strong>Output:</strong><br><pre style="background: #fff; padding: 10px; border-radius: 4px; margin: 5px 0;">${stdout}</pre></div>` : ''}
+          ${stderr ? `<div><strong>Error:</strong><br><pre style="background: #fff5f5; padding: 10px; border-radius: 4px; margin: 5px 0; color: #dc3545;">${stderr}</pre></div>` : ''}
+        </div>
+      `;
+
+      // Remove existing result if any
+      const existingResult = document.getElementById('result');
+      if (existingResult) {
+        existingResult.remove();
+      }
+
+      // Add new result
+      const resultDiv = document.createElement('div');
+      resultDiv.id = 'result';
+      resultDiv.innerHTML = resultHtml;
+      document.querySelector('.container').appendChild(resultDiv);
     }
   </script>
 </body>
