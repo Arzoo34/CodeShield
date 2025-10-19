@@ -1,82 +1,525 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeShield - Run Code Safely, Anywhere</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>CodeShield – Minimal</title>
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+	<style>
+		:root {
+			--bg-start: #1f1f1f; --bg-end: #262626;
+			--text: #d6d6d6; --muted: #9a9a9a;
+			--primary: #2aa3ef;
+			--card: #212225; --card-2: #1b1c1f;
+			--success: #19b36b; --error: #e74a5a;
+			--radius: 12px; --shadow: 0 4px 16px rgba(0,0,0,.25);
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0; color: var(--text);
+			font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+			background: linear-gradient(160deg, var(--bg-start), var(--bg-end));
+			line-height: 1.5; letter-spacing: .2px;
+		}
+		.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+		/* Header */
+		.cs-header { position: sticky; top: 0; background: rgba(20,20,22,.8); border-bottom: 1px solid rgba(255,255,255,.08); z-index: 10; }
+		.cs-header__inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+		.cs-logo { font-weight: 800; font-size: 20px; color: #e9e9e9; text-decoration: none; letter-spacing: .6px; }
+		.cs-nav { display: flex; gap: 18px; align-items: center; }
+		.cs-nav__link { color: var(--text); text-decoration: none; opacity: .9; transition: color .15s ease, opacity .15s ease; }
+		.cs-nav__link:hover, .cs-nav__link.is-active { color: #ffffff; opacity: 1; }
+		.cs-nav__link--cta { padding: 8px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; }
+		.cs-nav__toggle { display: none; background: none; border: 0; padding: 8px; cursor: pointer; }
+		.cs-nav__toggle span { display: block; width: 22px; height: 2px; background: var(--text); margin: 4px 0; }
+
+		/* Views */
+		.view { display: none; }
+		.view.is-active { display: block; }
+
+		/* Home */
+		.hero { padding: 56px 0 32px; }
+		.hero__content { max-width: 740px; }
+		.hero__title { font-size: 42px; line-height: 1.15; margin: 0 0 10px; color: #ededed; }
+		.hero__subtitle { margin: 0 0 16px; color: var(--muted); }
+		.hero__actions { display: flex; gap: 10px; }
+		.section-title { margin: 28px 0 14px; font-size: 20px; color: #ededed; }
+		.features__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+		.card { background: linear-gradient(180deg, var(--card), var(--card-2)); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); box-shadow: var(--shadow); }
+		.feature-card { padding: 14px; min-height: 120px; }
+		.feature-card h3 { margin: 0 0 6px; color: #ededed; font-size: 16px; }
+		.feature-card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+		/* Buttons */
+		.btn { appearance: none; border: 0; cursor: pointer; padding: 10px 16px; border-radius: 10px; background: #2a2d31; color: var(--text); transition: background .15s ease, opacity .15s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+		.btn:hover { background: #30343a; }
+		.btn--primary { background: #2aa3ef; color: #0e1520; }
+		.btn--primary:hover { background: #2395db; }
+		.btn--ghost { background: transparent; border: 1px solid rgba(255,255,255,.14); }
+
+		/* Compiler */
+		.cs-main { padding: 24px 0 48px; }
+		.cs-stage { display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+		.cs-editor__header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+		.cs-editor__title { font-weight: 600; color: #ededed; }
+		.cs-editor__actions { display: flex; gap: 10px; align-items: center; }
+		#editor { display: none; }
+		.CodeMirror { height: 500px; background: #1f2227; color: var(--text); border-radius: 0 0 var(--radius) var(--radius); }
+		.CodeMirror-gutters { background: #1b1e23; border-right: 1px solid rgba(255,255,255,.08); }
+		.CodeMirror-linenumber { color: #828a93; }
+		.CodeMirror-cursor { border-left: 2px solid var(--primary) !important; } /* no glow/animation */
+
+		.cs-controls { display: flex; gap: 10px; margin-top: 12px; }
+
+		/* Select & upload */
+		.cs-select select { appearance: none; background: #16191d; color: var(--text); border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 8px 10px; }
+		.cs-upload { position: relative; display: inline-flex; align-items: center; }
+		.cs-upload input[type="file"] { opacity: 0; position: absolute; inset: 0; cursor: pointer; width: 100%; }
+		.cs-upload span { background: #16191d; color: var(--text); border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 8px 10px; display: inline-block; }
+
+		/* IO & results */
+		.cs-io { overflow: hidden; }
+		.cs-tabs { display: flex; }
+		.cs-tab { flex: 1; padding: 10px 12px; background: transparent; border: 0; color: var(--muted); cursor: pointer; }
+		.cs-tab.is-active { color: #ededed; border-bottom: 2px solid var(--primary); }
+		.cs-panels { padding: 12px; }
+		.cs-panel { display: none; }
+		.cs-panel.is-active { display: block; }
+		#stdin { width: 100%; height: 150px; resize: vertical; min-height: 110px; background: #1f2227; color: var(--text); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 10px 12px; font-family: "JetBrains Mono", monospace; }
+		.cs-output { margin: 0; padding: 12px; min-height: 150px; background: #14171b; color: #ededed; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; font-family: "JetBrains Mono", monospace; }
+		.cs-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding: 12px; }
+		.cs-result__item { background: #171a1f; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 10px; }
+		.cs-result__label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+		.cs-result__value { font-family: "JetBrains Mono", monospace; font-size: 14px; color: #ededed; }
+		.status--ok { color: var(--success); }
+		.status--err { color: var(--error); }
+
+		/* Auth (Login) */
+		.auth { padding: 32px 0; }
+		.auth__wrap { display: grid; grid-template-columns: 1.1fr 1fr; }
+		.auth__side { padding: 18px; border-right: 1px solid rgba(255,255,255,.08); }
+		.auth__side h2 { margin: 0 0 6px; color: #ededed; }
+		.auth__side p { margin: 0 0 10px; color: var(--muted); }
+		.auth__illustration { background: #14171b; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 12px; font-family: "JetBrains Mono", monospace; color: #cfd8dc; }
+		.auth__form { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+		.auth__form h3 { margin: 0 0 6px; color: #ededed; }
+		.auth__field { display: flex; flex-direction: column; gap: 6px; }
+		.auth__field span { color: var(--muted); font-size: 12px; }
+		.auth__field input { background: #1f2227; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: "Montserrat", sans-serif; }
+		.auth__check { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+		.auth__links { display: flex; justify-content: flex-end; }
+		.auth__links a { color: var(--muted); text-decoration: none; }
+		.auth__links a:hover { color: #ffffff; }
+		.auth__alt { display: flex; flex-direction: column; gap: 8px; align-items: center; color: var(--muted); }
+		.auth__socials { display: flex; gap: 10px; }
+		.auth__social { background: #16191d; }
+		.auth__switch { text-align: center; color: var(--muted); }
+
+		/* Footer */
+		.cs-footer { padding: 28px 0 40px; color: var(--muted); }
+		.cs-footer .cs-divider { height: 1px; background: rgba(255,255,255,.12); margin-bottom: 16px; }
+		.cs-footer__nav { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+		.cs-footer__nav a { color: var(--muted); text-decoration: none; }
+		.cs-footer__nav a:hover { color: #ffffff; }
+		.cs-copy { text-align: center; margin: 0; }
+
+		/* Responsive */
+		@media (max-width: 1100px) {
+			.cs-stage { grid-template-columns: 1fr 360px; }
+			.CodeMirror { height: 460px; }
+		}
+		@media (max-width: 900px) {
+			.cs-stage { grid-template-columns: 1fr; }
+			.CodeMirror { height: 420px; }
+			.cs-results { grid-template-columns: 1fr; }
+			.cs-nav { display: none; }
+			.cs-nav__toggle { display: block; }
+			.features__grid { grid-template-columns: repeat(2, 1fr); }
+			.hero__title { font-size: 34px; }
+			.auth__wrap { grid-template-columns: 1fr; }
+			.auth__side { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+		}
+		@media (max-width: 540px) {
+			.container { padding: 0 14px; }
+			.CodeMirror { height: 360px; }
+			.cs-controls { flex-wrap: wrap; }
+			.btn { flex: 1; min-width: 46%; }
+			.features__grid { grid-template-columns: 1fr; }
+			.hero__title { font-size: 28px; }
+		}
+	</style>
 </head>
 <body>
-  <header>
-    <div class="container navbar">
-      <a href="#" class="logo">
-        <img src="https://cdn-icons-png.flaticon.com/512/5968/5968350.png" alt="CodeShield Logo">
-        CodeShield
-      </a>
-      <div class="nav-right">
-        <nav class="nav-links">
-          <a href="index.html">Home</a>
-          <a href="projectos.html">Run code</a>
-          <a href="about.html">About</a>
-        </nav>
-        <a href="#" class="login-btn">Login</a>
-      </div>
-    </div>
-  </header>
+	<header class="cs-header">
+		<div class="cs-header__inner container">
+			<div class="cs-brand">
+				<a href="#" class="cs-logo" data-route="home">CodeShield</a>
+			</div>
+			<nav class="cs-nav" aria-label="Primary">
+				<a href="#" class="cs-nav__link is-active" data-route="home">Home</a>
+				<a href="#" class="cs-nav__link" data-route="compiler">Compiler</a>
+				<a href="#" class="cs-nav__link cs-nav__link--cta" data-route="login">Login / Sign Up</a>
+			</nav>
+			<button class="cs-nav__toggle" aria-label="Toggle navigation">
+				<span></span><span></span><span></span>
+			</button>
+		</div>
+	</header>
 
-  <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="container">
-        <h1>Run Code Safely, Anywhere.</h1>
-        <a href="projectos.html" class="btn-primary">Try Sandbox</a>
-      </div>
-    </section>
+	<main>
+		<!-- Home View -->
+		<section id="view-home" class="view is-active">
+			<section class="hero container">
+				<div class="hero__content">
+					<h1 class="hero__title">Code. Compile. Conquer.</h1>
+					<p class="hero__subtitle">A minimal, modern online IDE for developers.</p>
+					<div class="hero__actions">
+						<a href="#" class="btn btn--primary" data-route="compiler">Start Coding</a>
+						<a href="#learn" class="btn">Learn More</a>
+					</div>
+				</div>
+			</section>
 
-    <!-- Features Section -->
-    <section class="features">
-      <div class="feature-card">
-        <img src="https://cdn-icons-png.flaticon.com/512/190/190411.png" alt="Secure Execution Icon">
-        <h3>Secure Execution</h3>
-      </div>
-      <div class="feature-card">
-        <img src="https://cdn-icons-png.flaticon.com/512/1827/1827504.png" alt="Time & Memory Limits Icon">
-        <h3>Time & Memory Limits</h3>
-      </div>
-      <div class="feature-card">
-        <img src="https://cdn-icons-png.flaticon.com/512/919/919852.png" alt="Supports Python, C++ Icon">
-        <h3>Supports Python &amp; C++</h3>
-      </div>
-    </section>
+			<section class="features container" id="learn">
+				<h2 class="section-title">Why CodeShield?</h2>
+				<div class="features__grid">
+					<article class="feature-card card">
+						<h3>Real-time Collaboration</h3>
+						<p>Work together instantly and efficiently.</p>
+					</article>
+					<article class="feature-card card">
+						<h3>Multi-language Support</h3>
+						<p>C, C++, Java, Python, JavaScript.</p>
+					</article>
+					<article class="feature-card card">
+						<h3>Cloud Saving</h3>
+						<p>Your work, available anywhere.</p>
+					</article>
+					<article class="feature-card card">
+						<h3>Syntax Highlighting</h3>
+						<p>Clean and readable code editing.</p>
+					</article>
+				</div>
+			</section>
+		</section>
 
-    <!-- How It Works Section -->
-    <section class="how-it-works">
-      <div class="container">
-        <h2>How It Works</h2>
-        <div class="steps">
-          <div class="step-card">
-            <img src="https://cdn-icons-png.flaticon.com/512/5968/5968350.png" alt="Choose Language Icon">
-            <h3>1. Choose Language</h3>
-            <p>Select your language from the dropdown. Python and C++ are supported.</p>
-          </div>
-          <div class="step-card">
-            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828919.png" alt="Write Code Icon">
-            <h3>2. Write Code</h3>
-            <p>Write your code in the editor. You can also provide input for your code.</p>
-          </div>
-          <div class="step-card">
-            <div class="step-number-icon">
-              <img src="https://fonts.gstatic.com/s/i/materialicons/play_arrow/v6/24px.svg" 
-                   alt="Run Code Icon" 
-                   style="height:40px; width:40px;">
-            </div>
-            <h3>3. Run Code</h3>
-            <p><b>Click the "Run Code" button to execute your code securely.</b></p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+		<!-- Compiler View -->
+		<section id="view-compiler" class="view">
+			<main class="cs-main container" id="compiler">
+				<section class="cs-stage">
+					<div class="cs-stage__left">
+						<div class="cs-editor card">
+							<div class="cs-editor__header">
+								<div class="cs-editor__title">Editor</div>
+								<div class="cs-editor__actions">
+									<label class="cs-select">
+										<select id="language-select" aria-label="Select language">
+											<option value="javascript" selected>JavaScript</option>
+											<option value="python">Python</option>
+											<option value="java">Java</option>
+											<option value="cpp">C++</option>
+											<option value="c">C</option>
+										</select>
+									</label>
+									<label class="cs-upload">
+										<input type="file" id="file-input" accept=".js,.py,.java,.cpp,.cc,.c,.txt" />
+										<span>Upload</span>
+									</label>
+									<button class="btn btn--ghost" id="btn-copy" title="Copy Code">Copy Code</button>
+									<button class="btn btn--ghost" id="btn-clear" title="Clear Editor">Clear</button>
+								</div>
+							</div>
+							<textarea id="editor"></textarea>
+						</div>
+
+						<div class="cs-controls">
+							<button class="btn btn--primary" id="btn-run">Run Code</button>
+							<button class="btn" id="btn-submit">Submit Code</button>
+						</div>
+					</div>
+
+					<div class="cs-stage__right">
+						<div class="cs-io card">
+							<div class="cs-tabs" role="tablist" aria-label="Input/Output Tabs">
+								<button class="cs-tab is-active" role="tab" aria-selected="true" aria-controls="tab-input" id="tabbtn-input">Input</button>
+								<button class="cs-tab" role="tab" aria-selected="false" aria-controls="tab-output" id="tabbtn-output">Output</button>
+							</div>
+							<div class="cs-panels">
+								<div id="tab-input" class="cs-panel is-active" role="tabpanel" aria-labelledby="tabbtn-input">
+									<textarea id="stdin" placeholder="Enter custom input here..."></textarea>
+								</div>
+								<div id="tab-output" class="cs-panel" role="tabpanel" aria-labelledby="tabbtn-output">
+									<pre id="stdout" class="cs-output" aria-live="polite"></pre>
+								</div>
+							</div>
+						</div>
+
+						<div class="cs-results card" aria-live="polite">
+							<div class="cs-result__item">
+								<span class="cs-result__label">Status</span>
+								<span class="cs-result__value" id="res-status">Ready</span>
+							</div>
+							<div class="cs-result__item">
+								<span class="cs-result__label">Time Taken</span>
+								<span class="cs-result__value" id="res-time">—</span>
+							</div>
+							<div class="cs-result__item">
+								<span class="cs-result__label">Memory Used</span>
+								<span class="cs-result__value" id="res-mem">—</span>
+							</div>
+						</div>
+					</div>
+				</section>
+			</main>
+		</section>
+
+		<!-- Login View -->
+		<section id="view-login" class="view">
+			<main class="auth container">
+				<section class="auth__wrap card">
+					<div class="auth__side">
+						<h2>Welcome back</h2>
+						<p>Sign in to continue coding.</p>
+						<div class="auth__illustration">
+<pre>// CodeShield minimal
+function greet(name) {
+  return 'Hello, ' + name + '!';
+}</pre>
+						</div>
+					</div>
+					<form class="auth__form" action="#" method="post" novalidate>
+						<h3>Sign in to your account</h3>
+						<label class="auth__field">
+							<span>Email</span>
+							<input type="email" name="email" placeholder="you@example.com" required />
+						</label>
+						<label class="auth__field">
+							<span>Password</span>
+							<input type="password" name="password" placeholder="••••••••" required />
+						</label>
+						<label class="auth__check">
+							<input type="checkbox" name="remember" />
+							<span>Remember Me</span>
+						</label>
+						<div class="auth__links">
+							<a href="#">Forgot Password?</a>
+						</div>
+						<button class="btn btn--primary" type="submit">Login</button>
+						<div class="auth__alt">
+							<span>Or continue with</span>
+							<div class="auth__socials">
+								<button type="button" class="btn auth__social">Google</button>
+								<button type="button" class="btn auth__social">GitHub</button>
+							</div>
+						</div>
+						<p class="auth__switch">Don’t have an account? <a href="#" data-route="login">Sign Up</a></p>
+					</form>
+				</section>
+			</main>
+		</section>
+	</main>
+
+	<footer class="cs-footer">
+		<div class="container">
+			<div class="cs-divider"></div>
+			<nav class="cs-footer__nav">
+				<a href="#about">About</a>
+				<a href="#contact">Contact</a>
+				<a href="#privacy">Privacy Policy</a>
+				<a href="#terms">Terms of Use</a>
+			</nav>
+			<p class="cs-copy">© CodeShield 2025</p>
+		</div>
+	</footer>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+	<script>
+		// Mobile nav toggle
+		(function () {
+			const navToggle = document.querySelector('.cs-nav__toggle');
+			const nav = document.querySelector('.cs-nav');
+			if (navToggle && nav) {
+				navToggle.addEventListener('click', () => {
+					nav.style.display = nav.style.display === 'flex' ? '' : 'flex';
+				});
+			}
+		})();
+
+		// Simple SPA navigation
+		(function () {
+			const routes = ['home','compiler','login'];
+			const viewEls = {
+				home: document.getElementById('view-home'),
+				compiler: document.getElementById('view-compiler'),
+				login: document.getElementById('view-login'),
+			};
+			function setActiveNav(route) {
+				document.querySelectorAll('.cs-nav__link').forEach(a => {
+					const is = a.getAttribute('data-route') === route;
+					a.classList.toggle('is-active', is);
+				});
+			}
+			function show(route) {
+				routes.forEach(r => viewEls[r].classList.toggle('is-active', r === route));
+				setActiveNav(route);
+				if (route === 'compiler') setTimeout(() => editor && editor.refresh(), 30);
+				window.scrollTo({ top: 0 });
+			}
+			document.addEventListener('click', (e) => {
+				const a = e.target.closest('[data-route]');
+				if (!a) return;
+				e.preventDefault();
+				show(a.getAttribute('data-route'));
+			});
+			show('home');
+		})();
+
+		// CodeMirror init
+		let editor = null;
+		(function initEditor() {
+			const ta = document.getElementById('editor');
+			if (!ta) return;
+			editor = CodeMirror.fromTextArea(ta, {
+				mode: 'javascript',
+				lineNumbers: true,
+				theme: 'dracula',
+				tabSize: 2,
+				indentUnit: 2,
+				autoCloseBrackets: true,
+				matchBrackets: true,
+			});
+			editor.setValue(`// Minimal CodeShield\\nfunction solve(input) {\\n  return input;\\n}\\n`);
+		})();
+
+		// Tabs
+		(function () {
+			const btnIn = document.getElementById('tabbtn-input');
+			const btnOut = document.getElementById('tabbtn-output');
+			const panIn = document.getElementById('tab-input');
+			const panOut = document.getElementById('tab-output');
+			function activate(which) {
+				const toIn = which === 'in';
+				btnIn.classList.toggle('is-active', toIn);
+				btnOut.classList.toggle('is-active', !toIn);
+				panIn.classList.toggle('is-active', toIn);
+				panOut.classList.toggle('is-active', !toIn);
+			}
+			btnIn?.addEventListener('click', () => activate('in'));
+			btnOut?.addEventListener('click', () => activate('out'));
+		})();
+
+		// Buttons & results
+		(function () {
+			const btnRun = document.getElementById('btn-run');
+			const btnSubmit = document.getElementById('btn-submit');
+			const btnCopy = document.getElementById('btn-copy');
+			const btnClear = document.getElementById('btn-clear');
+
+			const stdout = document.getElementById('stdout');
+			const stdin = document.getElementById('stdin');
+			const resStatus = document.getElementById('res-status');
+			const resTime = document.getElementById('res-time');
+			const resMem = document.getElementById('res-mem');
+
+			function setResults({ status, ok, time, mem }) {
+				resStatus.textContent = status;
+				resStatus.classList.remove('status--ok', 'status--err');
+				resStatus.classList.add(ok ? 'status--ok' : 'status--err');
+				resTime.textContent = time;
+				resMem.textContent = mem;
+			}
+			function showOutput(text) { stdout.textContent = text; }
+
+			btnRun?.addEventListener('click', async () => {
+				if (!editor) return;
+				const code = editor.getValue();
+				const input = stdin?.value ?? '';
+				btnRun.disabled = true; btnRun.textContent = 'Running…';
+				setResults({ status: 'Running…', ok: true, time: '—', mem: '—' });
+				await new Promise(r => setTimeout(r, 400 + Math.random() * 600));
+				let ok = true; let output = '';
+				try {
+					const lines = input.split(/\r?\n/).length;
+					output = `Echo input (lines: ${lines})\\n\\n${input}`.trim();
+				} catch (_) { ok = false; output = 'Execution error.'; }
+				const timeMs = (200 + Math.random() * 800).toFixed(0);
+				const memMb = (12 + Math.random() * 32).toFixed(1);
+				setResults({ status: ok ? 'Successfully Executed' : 'Error', ok, time: `${(timeMs/1000).toFixed(2)}s`, mem: `${memMb}MB` });
+				showOutput(output);
+				btnRun.disabled = false; btnRun.textContent = 'Run Code';
+			});
+
+			btnSubmit?.addEventListener('click', async () => {
+				if (!editor) return;
+				btnSubmit.disabled = true; btnSubmit.textContent = 'Submitting…';
+				await new Promise(r => setTimeout(r, 500));
+				setResults({ status: 'Submitted (mock)', ok: true, time: resTime.textContent || '—', mem: resMem.textContent || '—' });
+				btnSubmit.disabled = false; btnSubmit.textContent = 'Submit Code';
+			});
+
+			btnCopy?.addEventListener('click', async () => {
+				if (!editor) return;
+				try { await navigator.clipboard.writeText(editor.getValue()); btnCopy.textContent = 'Copied!'; setTimeout(() => btnCopy.textContent = 'Copy Code', 900); }
+				catch (_) { btnCopy.textContent = 'Copy Failed'; setTimeout(() => btnCopy.textContent = 'Copy Code', 1200); }
+			});
+
+			btnClear?.addEventListener('click', () => {
+				editor?.setValue('');
+				showOutput('');
+				setResults({ status: 'Ready', ok: true, time: '—', mem: '—' });
+			});
+		})();
+
+		// Language switching & upload
+		(function () {
+			const langSelect = document.getElementById('language-select');
+			const fileInput = document.getElementById('file-input');
+			function resolveMode(lang) {
+				switch (lang) {
+					case 'javascript': return 'javascript';
+					case 'python': return 'python';
+					case 'java': return 'text/x-java';
+					case 'cpp': return 'text/x-c++src';
+					case 'c': return 'text/x-csrc';
+					default: return 'javascript';
+				}
+			}
+			langSelect?.addEventListener('change', (e) => {
+				editor?.setOption('mode', resolveMode(e.target.value));
+			});
+			fileInput?.addEventListener('change', async (e) => {
+				const file = e.target.files && e.target.files[0];
+				if (!file) return;
+				const text = await file.text();
+				editor?.setValue(text);
+				const ext = (file.name.toLowerCase().split('.').pop() || '');
+				let inferred = null;
+				switch (ext) {
+					case 'js': inferred = 'javascript'; break;
+					case 'py': inferred = 'python'; break;
+					case 'java': inferred = 'java'; break;
+					case 'cpp': case 'cc': case 'cxx': inferred = 'cpp'; break;
+					case 'c': inferred = 'c'; break;
+				}
+				if (inferred) {
+					langSelect.value = inferred;
+					editor?.setOption('mode', resolveMode(inferred));
+				}
+			});
+		})();
+	</script>
 </body>
 </html>
