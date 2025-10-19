@@ -2,10 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Node.js and JDK
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    nodejs \
+    npm \
+    openjdk-21-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
